@@ -36,7 +36,7 @@ MASTER_DEFAULT_PORT = '5050'.freeze
 
 class MesosNodeStatus < Sensu::Plugin::Check::CLI
   option :server,
-         description: 'Mesos servers',
+         description: 'Mesos server',
          short: '-s SERVER',
          long: '--server SERVER',
          default: 'localhost'
@@ -54,17 +54,73 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
          proc: proc(&:to_i),
          default: 5
 
+  option :mode,
+         description: 'eq lt gt or rg',
+         short: '-m MODE',
+         long: '--mode MODE',
+         required: true
+
+  option :min,
+         description: 'min value on range',
+         short: '-l VALUE',
+         long: '--low VALUE',
+         required: false
+
+  option :max,
+         description: 'max value on range',
+         short: '-h VALUE',
+         long: '--high VALUE',
+         required: false
+
+  option :value,
+         description: 'value to check against',
+         short: '-v VALUE',
+         long: '--value VALUE',
+         default: 0,
+         required: false
+
+
   def run
 
     port = config[:port] || MASTER_DEFAULT_PORT
     uri = '/metrics/snapshot'
+    mode = config[:mode]
+    value = config[:value].to_i
 
     begin
       r = RestClient::Resource.new("http://#{config[:server]}:#{port}#{uri}", timeout: config[:timeout]).get
       metrics = JSON.parse(r)
-      critical 'master/tasks_running property not found! ' if metrics['master/tasks_running'].nil?
-      critical 'The number of running tasks on cluster is 0!' if metrics['master/tasks_running'].equal? 0.0
+      metric_value = metrics['master/tasks_running'].round
+      critical 'master/tasks_running property not found! ' if metric_value.nil?
+
+      case mode
+        when 'eq'
+          critical "The number of running tasks cluster is equal to #{value}!" if metric_value.equal? value
+        when 'lt'
+          critical "The number of running tasks cluster is lower than #{value}!" if metric_value < value
+        when 'gt'
+          critical "The number of running tasks cluster is greater than #{value}!" if metric_value > value
+        when 'rg'
+          min = config[:min]
+          max = config[:max]
+
+          raise(ArgumentError, "#{min} must be a number") unless numeric? min
+          raise(ArgumentError, "#{max} must be a number") unless numeric? max
+
+
+        if !(min.to_i..max.to_i).include? metric_value
+          critical "The number of running tasks in cluster is not in #{min} - #{max} value range!"
+        end
+      end
+
     end
     ok
   end
+
+  #Checks if a value is numeric
+  def numeric? stringValue
+    Float(stringValue) != nil rescue false
+  end
+
+  private :numeric?
 end
