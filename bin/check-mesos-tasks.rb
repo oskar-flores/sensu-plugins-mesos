@@ -64,13 +64,16 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
          description: 'min value on range',
          short: '-l VALUE',
          long: '--low VALUE',
-         required: false
+         required: false,
+         derfault: 0
+
 
   option :max,
          description: 'max value on range',
          short: '-h VALUE',
          long: '--high VALUE',
-         required: false
+         required: false,
+         default: 1
 
   option :value,
          description: 'value to check against',
@@ -86,9 +89,11 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
     uri = '/metrics/snapshot'
     mode = config[:mode]
     value = config[:value].to_i
+    server = config[:server]
 
     begin
-      r = RestClient::Resource.new("http://#{config[:server]}:#{port}#{uri}", timeout: config[:timeout]).get
+      server = get_leader_url server, port
+      r = RestClient::Resource.new("#{server}#{uri}", timeout: config[:timeout]).get
       metrics = JSON.parse(r)
       metric_value = metrics['master/tasks_running'].round
       critical 'master/tasks_running property not found! ' if metric_value.nil?
@@ -104,13 +109,12 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
           min = config[:min]
           max = config[:max]
 
-          raise(ArgumentError, "#{min} must be a number") unless numeric? min
-          raise(ArgumentError, "#{max} must be a number") unless numeric? max
+          puts max.to_i
+          puts metric_value
 
-
-        if !(min.to_i..max.to_i).include? metric_value
-          critical "The number of running tasks in cluster is not in #{min} - #{max} value range!"
-        end
+          unless (min.to_i..max.to_i).include? metric_value
+            critical "The number of running tasks in cluster is not in #{min} - #{max} value range!"
+          end
       end
 
     end
@@ -122,5 +126,10 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
     Float(stringValue) != nil rescue false
   end
 
+  def get_leader_url(server, port)
+    RestClient::Resource.new("http://#{server}:#{port}/redirect").get.request.url
+  end
+
   private :numeric?
+  private :get_leader_url
 end
