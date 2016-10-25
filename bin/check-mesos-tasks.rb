@@ -109,9 +109,6 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
           min = config[:min]
           max = config[:max]
 
-          puts max.to_i
-          puts metric_value
-
           unless (min.to_i..max.to_i).include? metric_value
             critical "The number of running tasks in cluster is not in #{min} - #{max} value range!"
           end
@@ -122,7 +119,7 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
   end
 
   #Checks if a value is numeric
-  def numeric? stringValue
+  def numeric?(stringValue)
     Float(stringValue) != nil rescue false
   end
 
