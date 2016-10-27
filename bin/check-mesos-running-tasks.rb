@@ -34,12 +34,13 @@ require 'json'
 # Mesos master default ports
 MASTER_DEFAULT_PORT = '5050'.freeze
 
-class MesosNodeStatus < Sensu::Plugin::Check::CLI
+class MesosTasksStatus < Sensu::Plugin::Check::CLI
   option :server,
          description: 'Mesos server',
          short: '-s SERVER',
          long: '--server SERVER',
-         default: 'localhost'
+         default: 'localhost',
+         required: true
 
   option :port,
          description: "port (default #{MASTER_DEFAULT_PORT})",
@@ -94,9 +95,7 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
     begin
       server = get_leader_url server, port
       r = RestClient::Resource.new("#{server}#{uri}", timeout: config[:timeout]).get
-      metrics = JSON.parse(r)
-      metric_value = metrics['master/tasks_running'].round
-      critical 'master/tasks_running property not found! ' if metric_value.nil?
+      metric_value = get_running_tasks (r)
 
       case mode
         when 'eq'
@@ -118,15 +117,51 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
     ok
   end
 
-  #Checks if a value is numeric
-  def numeric?(stringValue)
-    Float(stringValue) != nil rescue false
-  end
-
   def get_leader_url(server, port)
     RestClient::Resource.new("http://#{server}:#{port}/redirect").get.request.url
   end
 
-  private :numeric?
-  private :get_leader_url
+  def get_running_tasks(data)
+    begin
+      running_tasks = JSON.parse(data)['master/tasks_running']
+    rescue JSON::ParserError
+      raise "Could not parse JSON response: #{data}"
+    end
+
+    if running_tasks.nil?
+      raise "No tasks in server response: #{data}"
+    end
+
+    return [running_tasks.round]
+  end
+
+  def equal (value)
+    begin
+      running_tasks = JSON.parse(data)['master/tasks_running']
+    rescue JSON::ParserError
+      raise "Could not parse JSON response: #{data}"
+    end
+
+    if running_tasks.nil?
+      raise "No tasks in server response: #{data}"
+    end
+
+    return [running_tasks.round]
+  end
+
+  def get_running_tasks(data)
+    begin
+      running_tasks = JSON.parse(data)['master/tasks_running']
+    rescue JSON::ParserError
+      raise "Could not parse JSON response: #{data}"
+    end
+
+    if running_tasks.nil?
+      raise "No tasks in server response: #{data}"
+    end
+
+    return [running_tasks.round]
+  end
+  public :get_running_tasks
+  public :get_leader_url
 end
