@@ -128,7 +128,7 @@ class MesosTasksStatus < Sensu::Plugin::Check::CLI
       raise "No tasks in server response: #{data}"
     end
 
-    return [running_tasks.round]
+    return running_tasks.round
   end
 
   def check_mesos_tasks(metric_value, mode, value, min, max)
