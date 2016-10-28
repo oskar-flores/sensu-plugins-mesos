@@ -35,8 +35,9 @@ require 'json'
 MASTER_DEFAULT_PORT = '5050'.freeze
 
 class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
-  check_name 'MesosLostTasksCheck'
+  check_name 'CheckMesosLostTasks'
   @@metrics_name = 'master/tasks_lost'
+
   def self.metrics_name
     @@metrics_name
   end
@@ -70,6 +71,10 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
 
   def run
 
+    if config[:value].to_i < 0
+      unknown 'Number of lost tasks cannot be negative'
+    end
+
     server = config[:server]
     port = config[:port] || MASTER_DEFAULT_PORT
     uri = '/metrics/snapshot'
@@ -83,7 +88,11 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
       # puts(server)
 
       r = RestClient::Resource.new("#{server}#{uri}", timeout).get
-      check_tasks(r, value)
+      tasks_lost = check_tasks(r)
+
+      if tasks_lost > value
+        critical "The number of LOST tasks [#{tasks_lost}] is bigger than provided [#{value}]!"
+      end
     end
     ok
   end
@@ -94,22 +103,19 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
 
   # Parses JSON data as returned from Mesos's metrics API
   # @param data [String] Server response
-  # @param value [Integer] value to check with
-  def check_tasks(data, value)
+  # @return tasks_lost [Integer] Number of lost tasks in Mesos
+  def check_tasks(data)
     begin
       tasks_lost = JSON.parse(data)[MesosLostTasksCheck.metrics_name]
     rescue JSON::ParserError
       raise "Could not parse JSON response: #{data}"
     end
 
-
     if tasks_lost.nil?
       raise "No metrics for [#{MesosLostTasksCheck.metrics_name}] in server response: #{data}"
     end
 
-    if tasks_lost > value
-      critical "The number of LOST tasks [#{tasks_lost.round}] is bigger than provided [#{value}]!"
-    end
+    tasks_lost.round.to_i
 
   end
 end
