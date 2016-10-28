@@ -91,63 +91,31 @@ class MesosTasksStatus < Sensu::Plugin::Check::CLI
     mode = config[:mode]
     value = config[:value].to_i
     server = config[:server]
+    min = config[:min]
+    max = config[:max]
 
     begin
       server = get_leader_url server, port
       r = RestClient::Resource.new("#{server}#{uri}", timeout: config[:timeout]).get
       metric_value = get_running_tasks (r)
-
-      case mode
-        when 'eq'
-          critical "The number of running tasks cluster is equal to #{value}!" if metric_value.equal? value
-        when 'lt'
-          critical "The number of running tasks cluster is lower than #{value}!" if metric_value < value
-        when 'gt'
-          critical "The number of running tasks cluster is greater than #{value}!" if metric_value > value
-        when 'rg'
-          min = config[:min]
-          max = config[:max]
-
-          unless (min.to_i..max.to_i).include? metric_value
-            critical "The number of running tasks in cluster is not in #{min} - #{max} value range!"
-          end
-      end
-
+      check_mesos_tasks(metric_value, mode, value)
     end
     ok
   end
+
+
+  # Redirects server call to discover the Leader
+  # @param server [String] Server address
+  # @param port [Number] api port
+  # @return [Url] Url representing the Leader
 
   def get_leader_url(server, port)
     RestClient::Resource.new("http://#{server}:#{port}/redirect").get.request.url
   end
 
-  def get_running_tasks(data)
-    begin
-      running_tasks = JSON.parse(data)['master/tasks_running']
-    rescue JSON::ParserError
-      raise "Could not parse JSON response: #{data}"
-    end
-
-    if running_tasks.nil?
-      raise "No tasks in server response: #{data}"
-    end
-
-    return [running_tasks.round]
-  end
-
-  def equal (value)
-    begin
-      running_tasks = JSON.parse(data)['master/tasks_running']
-    rescue JSON::ParserError
-      raise "Could not parse JSON response: #{data}"
-    end
-
-    if running_tasks.nil?
-      raise "No tasks in server response: #{data}"
-    end
-
-    return [running_tasks.round]
-  end
+  # Parses JSON data as returned from Mesos  API
+  # @param data [String] Server response
+  # @return [Numeric] Number of running tasks
 
   def get_running_tasks(data)
     begin
@@ -162,6 +130,23 @@ class MesosTasksStatus < Sensu::Plugin::Check::CLI
 
     return [running_tasks.round]
   end
+
+  def check_mesos_tasks(metric_value, mode, value, min, max)
+
+    case mode
+      when 'eq'
+        critical "The number of running tasks cluster is equal to #{value}!" if metric_value.equal? value
+      when 'lt'
+        critical "The number of running tasks cluster is lower than #{value}!" if metric_value < value
+      when 'gt'
+        critical "The number of running tasks cluster is greater than #{value}!" if metric_value > value
+      when 'rg'
+        unless (min.to_i..max.to_i).include? metric_value
+          critical "The number of running tasks in cluster is not in #{min} - #{max} value range!"
+        end
+    end
+  end
+
   public :get_running_tasks
   public :get_leader_url
 end
