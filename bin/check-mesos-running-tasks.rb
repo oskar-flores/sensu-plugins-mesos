@@ -98,7 +98,7 @@ class MesosTasksStatus < Sensu::Plugin::Check::CLI
       server = get_leader_url server, port
       r = RestClient::Resource.new("#{server}#{uri}", timeout: config[:timeout]).get
       metric_value = get_running_tasks (r)
-      check_mesos_tasks(metric_value, mode, value)
+      check_mesos_tasks(metric_value, mode, value,min,max)
     end
     ok
   end
@@ -149,4 +149,5 @@ class MesosTasksStatus < Sensu::Plugin::Check::CLI
 
   public :get_running_tasks
   public :get_leader_url
+  public :check_mesos_tasks
 end
