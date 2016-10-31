@@ -39,7 +39,8 @@ describe 'MesosTaskCheck' do
     it 'tests that the number of running tasks is not equal to 0' do
       check = (MesosTasksStatus.new @default_parameters.split (' '))
       allow(check).to receive(:get_leader_url) {'localhost'}
-      expect { check.run }
+
+      expect { check.get_leader_url '', '' } .to be 'localhost'
 
 
     end
