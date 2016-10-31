@@ -34,7 +34,7 @@ require 'json'
 # Mesos master default ports
 MASTER_DEFAULT_PORT = '5050'.freeze
 
-class MesosTasksStatus < Sensu::Plugin::Check::CLI
+class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
   option :server,
          description: 'Mesos server',
          short: '-s SERVER',
@@ -99,6 +99,10 @@ class MesosTasksStatus < Sensu::Plugin::Check::CLI
       r = RestClient::Resource.new("#{server}#{uri}", timeout: config[:timeout]).get
       metric_value = get_running_tasks (r)
       check_mesos_tasks(metric_value, mode, value, min, max)
+    rescue Errno::ECONNREFUSED, RestClient::ResourceNotFound, SocketError
+      critical  "Mesos #{server} is not responding"
+    rescue RestClient::RequestTimeout
+      critical  "Mesos #{server} connection timed out"
     end
     ok
   end
