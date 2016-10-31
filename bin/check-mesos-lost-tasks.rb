@@ -36,10 +36,10 @@ MASTER_DEFAULT_PORT = '5050'.freeze
 
 class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
   check_name 'CheckMesosLostTasks'
-  @@metrics_name = 'master/tasks_lost'
+  @metrics_name = 'master/tasks_lost'.freeze
 
-  def self.metrics_name
-    @@metrics_name
+  class << self
+    attr_reader :metrics_name
   end
 
   option :server,
@@ -68,9 +68,7 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
          default: 0,
          required: false
 
-
   def run
-
     if config[:value].to_i < 0
       unknown 'Number of lost tasks cannot be negative'
     end
@@ -80,7 +78,6 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
     uri = '/metrics/snapshot'
     timeout = config[:timeout].to_i
     value = config[:value].to_i
-
 
     begin
       server = get_leader_url server, port
@@ -116,6 +113,5 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
     end
 
     tasks_lost.round.to_i
-
   end
 end
