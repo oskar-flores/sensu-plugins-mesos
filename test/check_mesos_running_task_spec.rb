@@ -21,14 +21,15 @@ def check_results(parameters)
   check = MesosRunningTaskCheck.new parameters.split(' ')
   check.get_running_tasks mesos_metrics_response
 end
-describe 'MesosTaskCheck' do
+
+describe 'MesosRunningTaskCheck' do
   before do
     @default_parameters = '--server localhost --mode eq --value 0'
     @check = MesosRunningTaskCheck.new @default_parameters.split(' ')
   end
 
   describe '#run' do
-    it 'tests that runing tasks  metrics are ok' do
+    it 'tests that running tasks  metrics are ok' do
       tasks_running = check_results '--server localhost --mode eq --value 0'
       expect(tasks_running).to be 9
     end
