@@ -22,12 +22,10 @@ def check_results(parameters)
   check.get_running_tasks mesos_metrics_response
 end
 describe 'MesosTaskCheck' do
-
   before do
     @default_parameters = '--server localhost --mode eq --value 0'
     @check = MesosRunningTaskCheck.new @default_parameters.split(' ')
   end
-
 
   describe '#run' do
     it 'tests that runing tasks  metrics are ok' do

@@ -1,6 +1,6 @@
 #! /usr/bin/env ruby
 #
-#   check-mesos-tasks
+#   check-mesos-running-tasks
 #
 # DESCRIPTION:
 #   This plugin checks that there are running tasks on a mesos cluster
@@ -35,6 +35,8 @@ require 'json'
 MASTER_DEFAULT_PORT = '5050'.freeze
 
 class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
+  check_name 'CheckMesosRunningTask'
+
   option :server,
          description: 'Mesos server',
          short: '-s SERVER',

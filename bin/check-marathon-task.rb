@@ -53,7 +53,7 @@ class MarathonTaskCheck < Sensu::Plugin::Check::CLI
   option :instances, short: '-i INSTANCES', long: '--instances INSTANCES', required: true, proc: proc(&:to_i)
 
   def run
-    if config[:instances] == 0
+    if config[:instances].zero?
       unknown 'number of instances should be an integer'
     end
 
