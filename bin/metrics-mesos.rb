@@ -70,7 +70,7 @@ class MesosMetrics < Sensu::Plugin::Metric::CLI::Graphite
          default: 5
 
   def run
-    uri = '/master/stats.json'
+    uri = '/metrics/snapshot'
     case config[:mode]
     when 'master'
       port = config[:port] || MASTER_DEFAULT_PORT
