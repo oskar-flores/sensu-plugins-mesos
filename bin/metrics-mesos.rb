@@ -35,7 +35,7 @@ require 'json'
 
 # Mesos default ports are defined here: http://mesos.apache.org/documentation/latest/configuration
 MASTER_DEFAULT_PORT ||= '5050'.freeze
-SLAVE_DEFAULT_PORT = '5051'.freeze
+SLAVE_DEFAULT_PORT ||= '5051'.freeze
 
 class MesosMetrics < Sensu::Plugin::Metric::CLI::Graphite
   option :mode,

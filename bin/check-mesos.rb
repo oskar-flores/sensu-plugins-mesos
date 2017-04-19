@@ -31,7 +31,7 @@ require 'rest-client'
 
 # Mesos default ports are defined here: http://mesos.apache.org/documentation/latest/configuration
 MASTER_DEFAULT_PORT ||= '5050'.freeze
-SLAVE_DEFAULT_PORT = '5051'.freeze
+SLAVE_DEFAULT_PORT ||= '5051'.freeze
 
 class MesosNodeStatus < Sensu::Plugin::Check::CLI
   option :server,
