@@ -32,7 +32,7 @@ require 'rest-client'
 require 'json'
 
 # Mesos master default ports
-MASTER_DEFAULT_PORT = '5050'.freeze
+MASTER_DEFAULT_PORT ||= '5050'.freeze
 
 class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
   check_name 'CheckMesosLostTasks'
