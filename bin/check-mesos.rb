@@ -62,20 +62,19 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
   def run
     mode = config[:mode]
     servers = config[:server]
+    uri = '/health'
     case mode
     when 'master'
       port = config[:port] || MASTER_DEFAULT_PORT
-      uri = '/master/health'
     when 'slave'
       port = config[:port] || SLAVE_DEFAULT_PORT
-      uri = '/slave(1)/health'
     end
     failures = []
     servers.split(',').each do |server|
       begin
         r = RestClient::Resource.new("http://#{server}:#{port}#{uri}", timeout: config[:timeout]).get
         if r.code != 200
-          failures << "#{config[:mode]} on #{server} is not responding"
+          failures << "#{mode} on #{server} is not responding"
         end
       rescue Errno::ECONNREFUSED, RestClient::ResourceNotFound, SocketError
         failures << "Mesos #{mode} on #{server} is not responding"
