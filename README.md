@@ -10,6 +10,7 @@
 
 ## Files
  * bin/check-chronos.rb
+ * bin/check-metronome.rb
  * bin/check-marathon.rb
  * bin/check-mesos.rb
  * bin/metrics-marathon.rb
