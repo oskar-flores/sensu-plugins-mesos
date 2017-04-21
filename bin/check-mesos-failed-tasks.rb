@@ -55,7 +55,7 @@ class MesosFailedTasksCheck < Sensu::Plugin::Check::CLI
          required: false
 
   option :uri,
-    description: 'Endpoint URI',
+         description: 'Endpoint URI',
          short: '-u URI',
          long: '--uri URI',
          default: '/metrics/snapshot'

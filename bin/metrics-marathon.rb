@@ -55,7 +55,7 @@ class MarathonMetrics < Sensu::Plugin::Metric::CLI::Graphite
          default: '8080'
 
   option :uri,
-    description: 'Endpoint URI',
+         description: 'Endpoint URI',
          short: '-u URI',
          long: '--uri URI',
          default: '/metrics'

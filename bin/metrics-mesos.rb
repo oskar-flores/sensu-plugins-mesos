@@ -63,7 +63,7 @@ class MesosMetrics < Sensu::Plugin::Metric::CLI::Graphite
          required: false
 
   option :uri,
-    description: 'Endpoint URI',
+         description: 'Endpoint URI',
          short: '-u URI',
          long: '--uri URI',
          default: '/metrics/snapshot'

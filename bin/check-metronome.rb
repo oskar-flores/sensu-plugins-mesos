@@ -43,7 +43,7 @@ class MetronomeNodeStatus < Sensu::Plugin::Check::CLI
          default: '80'
 
   option :uri,
-    description: 'Endpoint URI',
+         description: 'Endpoint URI',
          short: '-u URI',
          long: '--uri URI',
          default: '/v1/jobs'

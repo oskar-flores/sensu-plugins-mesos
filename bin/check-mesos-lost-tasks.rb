@@ -62,7 +62,7 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
          default: 5
 
   option :uri,
-    description: 'Endpoint URI',
+         description: 'Endpoint URI',
          short: '-u URI',
          long: '--uri URI',
          default: '/metrics/snapshot'

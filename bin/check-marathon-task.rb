@@ -58,7 +58,7 @@ class MarathonTaskCheck < Sensu::Plugin::Check::CLI
          default: 8080
 
   option :uri,
-    description: 'Endpoint URI',
+         description: 'Endpoint URI',
          short: '-u URI',
          long: '--uri URI',
          default: '/v2/tasks?status=running'
