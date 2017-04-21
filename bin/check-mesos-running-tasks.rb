@@ -50,6 +50,12 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
          long: '--port PORT',
          required: false
 
+  option :uri,
+    description: 'Endpoint URI',
+         short: '-u URI',
+         long: '--uri URI',
+         default: '/metrics/snapshot'
+
   option :timeout,
          description: 'timeout in seconds',
          short: '-t TIMEOUT',
@@ -86,7 +92,7 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
 
   def run
     port = config[:port] || MASTER_DEFAULT_PORT
-    uri = '/metrics/snapshot'
+    uri = config[:uri]
     mode = config[:mode]
     value = config[:value].to_i
     server = config[:server]

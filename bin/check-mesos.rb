@@ -52,6 +52,12 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
          long: '--port PORT',
          required: false
 
+  option :uri,
+    description: 'Endpoint URI',
+         short: '-u URI',
+         long: '--uri URI',
+         default: '/health'
+
   option :timeout,
          description: 'timeout in seconds',
          short: '-t TIMEOUT',
@@ -62,7 +68,7 @@ class MesosNodeStatus < Sensu::Plugin::Check::CLI
   def run
     mode = config[:mode]
     servers = config[:server]
-    uri = '/health'
+    uri = config[:uri]
     case mode
     when 'master'
       port = config[:port] || MASTER_DEFAULT_PORT

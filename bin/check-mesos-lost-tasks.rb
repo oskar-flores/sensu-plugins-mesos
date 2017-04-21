@@ -61,6 +61,12 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
          proc: proc(&:to_i),
          default: 5
 
+  option :uri,
+    description: 'Endpoint URI',
+         short: '-u URI',
+         long: '--uri URI',
+         default: '/metrics/snapshot'
+
   option :value,
          description: 'value to check against',
          short: '-v VALUE',
@@ -75,7 +81,7 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
 
     server = config[:server]
     port = config[:port] || MASTER_DEFAULT_PORT
-    uri = '/metrics/snapshot'
+    uri = config[:uri]
     timeout = config[:timeout].to_i
     value = config[:value].to_i
 

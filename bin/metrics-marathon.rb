@@ -54,6 +54,12 @@ class MarathonMetrics < Sensu::Plugin::Metric::CLI::Graphite
          required: false,
          default: '8080'
 
+  option :uri,
+    description: 'Endpoint URI',
+         short: '-u URI',
+         long: '--uri URI',
+         default: '/metrics'
+
   option :timeout,
          description: 'timeout in seconds',
          short: '-t TIMEOUT',
@@ -62,7 +68,7 @@ class MarathonMetrics < Sensu::Plugin::Metric::CLI::Graphite
          default: 5
 
   def run
-    r = RestClient::Resource.new("http://#{config[:server]}:#{config[:port]}/metrics", timeout: config[:timeout]).get
+    r = RestClient::Resource.new("http://#{config[:server]}:#{config[:port]}#{config[:uri]}", timeout: config[:timeout]).get
     all_metrics = JSON.parse(r)
     metric_groups = all_metrics.keys - SKIP_ROOT_KEYS
     metric_groups.each do |metric_groups_key|

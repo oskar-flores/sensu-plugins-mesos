@@ -57,6 +57,12 @@ class MarathonTaskCheck < Sensu::Plugin::Check::CLI
          long: '--port PORT',
          default: 8080
 
+  option :uri,
+    description: 'Endpoint URI',
+         short: '-u URI',
+         long: '--uri URI',
+         default: '/v2/tasks?status=running'
+
   option :task,
          short: '-t TASK',
          long: '--task TASK',
@@ -74,9 +80,9 @@ class MarathonTaskCheck < Sensu::Plugin::Check::CLI
     end
 
     failures = []
+    uri = config[:uri]
     config[:server].split(',').each do |s|
       begin
-        uri = '/v2/tasks?status=running'
         url = URI.parse("http://#{s}:#{config[:port]}#{uri}")
         req = Net::HTTP::Get.new(url)
         req.add_field('Accept', 'application/json')

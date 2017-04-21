@@ -45,6 +45,12 @@ class MesosLeaderNodeStatus < Sensu::Plugin::Check::CLI
          long: '--port PORT',
          required: false
 
+  option :uri,
+    description: 'Endpoint URI',
+         short: '-u URI',
+         long: '--uri URI',
+         default: '/master/redirect'
+
   option :timeout,
          description: 'timeout in seconds',
          short: '-t TIMEOUT',
@@ -55,7 +61,7 @@ class MesosLeaderNodeStatus < Sensu::Plugin::Check::CLI
   def run
     server = config[:server]
     port = config[:port] || MASTER_DEFAULT_PORT
-    uri = '/master/redirect'
+    uri = config[:uri]
     begin
       r = RestClient::Resource.new("http://#{server}:#{port}#{uri}", timeout: config[:timeout]).get
       if r.code == 503
