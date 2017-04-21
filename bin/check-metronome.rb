@@ -1,9 +1,9 @@
 #! /usr/bin/env ruby
 #
-#   check-chronos
+#   check-metronome
 #
 # DESCRIPTION:
-#   This plugin checks that Chronos can query the existing job graph.
+#   This plugin checks that Metronome can query the existing job graph.
 #
 # OUTPUT:
 #   plain text
@@ -21,7 +21,7 @@
 # NOTES:
 #
 # LICENSE:
-#   Copyright 2015, Tom Stockton (tom@stocktons.org.uk)
+#   Copyright 2017, PTC (www.ptc.com)
 #   Released under the same terms as Sensu (the MIT license); see LICENSE
 #   for details.
 #
@@ -29,15 +29,15 @@
 require 'sensu-plugin/check/cli'
 require 'rest-client'
 
-class ChronosNodeStatus < Sensu::Plugin::Check::CLI
+class MetronomeNodeStatus < Sensu::Plugin::Check::CLI
   option :server,
-         description: 'Chronos hosts, comma separated',
+         description: 'Metronome hosts, comma separated',
          short: '-s SERVER',
          long: '--server SERVER',
          default: 'localhost'
 
   option :port,
-         description: 'Chronos port',
+         description: 'Metronome port',
          short: '-p PORT',
          long: '--port PORT',
          default: '80'
@@ -51,22 +51,22 @@ class ChronosNodeStatus < Sensu::Plugin::Check::CLI
 
   def run
     servers = config[:server]
+    uri = '/v1/jobs'
     failures = []
-    uri = '/scheduler/jobs'
     servers.split(',').each do |server|
       begin
         r = RestClient::Resource.new("http://#{server}:#{config[:port]}#{uri}", timeout: config[:timeout]).get
         if r.code != 200
-          failures << "Chronos on #{server} is not responding"
+          failures << "Metronome on #{server} is not responding"
         end
       rescue Errno::ECONNREFUSED, RestClient::ResourceNotFound, SocketError
-        failures << "Chronos on #{server} is not responding"
+        failures << "Metronome on #{server} is not responding"
       rescue RestClient::RequestTimeout
-        failures << "Chronos on #{server} connection timed out"
+        failures << "Metronome on #{server} connection timed out"
       end
     end
     if failures.empty?
-      ok "Chronos is running on #{servers}"
+      ok "Metronome is running on #{servers}"
     else
       critical failures.join("\n")
     end
