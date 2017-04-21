@@ -13,6 +13,7 @@ This CHANGELOG follows the format listed at [Keep A Changelog](http://keepachang
 - check-marathon-task.rb: Rename incorrect "state" parameter to "status".
 - All checks now have a configurable API endpoint using --uri or -u
 - Support the latest Mesos API
+- Dropped support for Ruby 1.9.3
 
 ## [0.1.1] - 2016-03-04
 ### Added
