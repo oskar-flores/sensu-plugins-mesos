@@ -40,7 +40,7 @@ class MetronomeNodeStatus < Sensu::Plugin::Check::CLI
          description: 'Metronome port',
          short: '-p PORT',
          long: '--port PORT',
-         default: '80'
+         default: '9942'
 
   option :uri,
          description: 'Endpoint URI',
