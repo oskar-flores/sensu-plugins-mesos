@@ -72,6 +72,7 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
          short: '-v VALUE',
          long: '--value VALUE',
          default: 0,
+         proc: proc(&:to_i),
          required: false
 
   def run

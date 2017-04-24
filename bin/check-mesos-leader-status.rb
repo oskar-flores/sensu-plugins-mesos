@@ -49,7 +49,7 @@ class MesosLeaderNodeStatus < Sensu::Plugin::Check::CLI
          description: 'Endpoint URI',
          short: '-u URI',
          long: '--uri URI',
-         default: '/master/redirect'
+         default: '/redirect'
 
   option :timeout,
          description: 'timeout in seconds',

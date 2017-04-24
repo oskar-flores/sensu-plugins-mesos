@@ -71,6 +71,7 @@ class MesosFailedTasksCheck < Sensu::Plugin::Check::CLI
          description: 'value to check against',
          short: '-v VALUE',
          long: '--value VALUE',
+         proc: proc(&:to_i),
          default: 0,
          required: false
 

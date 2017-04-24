@@ -74,6 +74,7 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
          short: '-l VALUE',
          long: '--low VALUE',
          required: false,
+         proc: proc(&:to_i),
          derfault: 0
 
   option :max,
@@ -81,12 +82,14 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
          short: '-h VALUE',
          long: '--high VALUE',
          required: false,
+         proc: proc(&:to_i),
          default: 1
 
   option :value,
          description: 'value to check against',
          short: '-v VALUE',
          long: '--value VALUE',
+         proc: proc(&:to_i),
          default: 0,
          required: false
 
