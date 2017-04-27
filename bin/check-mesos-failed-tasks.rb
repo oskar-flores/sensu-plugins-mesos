@@ -95,16 +95,17 @@ class MesosFailedTasksCheck < Sensu::Plugin::Check::CLI
 
     begin
       server = get_leader_url server, port
-      # remove comment for debugging purpose
-      # puts(server)
-
       r = RestClient::Resource.new("#{server}#{uri}", timeout).get
       tasks_failed = check_tasks(r)
+    rescue Errno::ECONNREFUSED, RestClient::ResourceNotFound, SocketError
+      critical  "Mesos #{server} is not responding"
+    rescue RestClient::RequestTimeout
+      critical  "Mesos #{server} connection timed out"
       if config[:delta]
         db = Daybreak::DB.new '/tmp/mesos-metrics.db', default: 0
-        prev_value = db["task_#{@metrics_name}"]
+        prev_value = db["task_#{MesosFailedTasksCheck.metrics_name}"]
         db.lock do
-          db["task_#{@metrics_name}"] = tasks_failed
+          db["task_#{MesosFailedTasksCheck.metrics_name}"] = tasks_failed
         end
         tasks_failed -= prev_value
         db.flush
@@ -118,6 +119,11 @@ class MesosFailedTasksCheck < Sensu::Plugin::Check::CLI
     end
     ok
   end
+
+  # Redirects server call to discover the Leader
+  # @param server [String] Server address
+  # @param port [Number] api port
+  # @return [Url] Url representing the Leader
 
   def get_leader_url(server, port)
     RestClient::Resource.new("http://#{server}:#{port}/redirect").get.request.url

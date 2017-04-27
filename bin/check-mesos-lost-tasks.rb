@@ -102,9 +102,9 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
       tasks_lost = check_tasks(r)
       if config[:delta]
         db = Daybreak::DB.new '/tmp/mesos-metrics.db', default: 0
-        prev_value = db["task_#{@metrics_name}"]
+        prev_value = db["task_#{MesosLostTasksCheck.metrics_name}"]
         db.lock do
-          db["task_#{@metrics_name}"] = tasks_lost
+          db["task_#{MesosLostTasksCheck.metrics_name}"] = tasks_lost
         end
         tasks_lost -= prev_value
         db.flush

@@ -19,7 +19,7 @@ end
 
 def check_results(parameters)
   check = MesosRunningTaskCheck.new parameters.split(' ')
-  check.get_running_tasks mesos_metrics_response
+  check.check_tasks mesos_metrics_response
 end
 
 describe 'MesosRunningTaskCheck' do
@@ -35,8 +35,8 @@ describe 'MesosRunningTaskCheck' do
     end
 
     it 'tests that an empty server response raises an error' do
-      expect { @check.get_running_tasks '{}' }.to raise_error(/No tasks in server response/)
-      expect { @check.get_running_tasks '' }.to raise_error(/Could not parse JSON/)
+      expect { @check.check_tasks '{}' }.to raise_error(/No tasks in server response/)
+      expect { @check.check_tasks '' }.to raise_error(/Could not parse JSON/)
     end
   end
 end
