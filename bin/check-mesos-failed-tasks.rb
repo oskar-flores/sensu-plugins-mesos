@@ -30,6 +30,7 @@
 require 'sensu-plugin/check/cli'
 require 'rest-client'
 require 'json'
+require 'daybreak'
 
 # Mesos master default ports
 MASTER_DEFAULT_PORT ||= '5050'.freeze
@@ -75,6 +76,12 @@ class MesosFailedTasksCheck < Sensu::Plugin::Check::CLI
          default: 0,
          required: false
 
+  option :delta,
+         short: '-d',
+         long: '--delta',
+         description: 'Use this flag to compare the metric with the previously retrieved value',
+         boolean: true
+
   def run
     if config[:value].to_i < 0
       unknown 'Number of failed tasks cannot be negative'
@@ -93,6 +100,17 @@ class MesosFailedTasksCheck < Sensu::Plugin::Check::CLI
 
       r = RestClient::Resource.new("#{server}#{uri}", timeout).get
       tasks_failed = check_tasks(r)
+      if config[:delta]
+        db = Daybreak::DB.new '/tmp/mesos-metrics.db', default: 0
+        prev_value = db["task_#{@metrics_name}"]
+        db.lock do
+          db["task_#{@metrics_name}"] = tasks_failed
+        end
+        tasks_failed -= prev_value
+        db.flush
+        db.compact
+        db.close
+      end
 
       if tasks_failed > value
         critical "The number of FAILED tasks [#{tasks_failed}] is bigger than provided [#{value}]!"

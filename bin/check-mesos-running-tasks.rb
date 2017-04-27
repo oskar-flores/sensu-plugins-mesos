@@ -30,6 +30,7 @@
 require 'sensu-plugin/check/cli'
 require 'rest-client'
 require 'json'
+require 'daybreak'
 
 # Mesos master default ports
 MASTER_DEFAULT_PORT ||= '5050'.freeze
@@ -93,6 +94,12 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
          default: 0,
          required: false
 
+  option :delta,
+         short: '-d',
+         long: '--delta',
+         description: 'Use this flag to compare the metric with the previously retrieved value',
+         boolean: true
+
   def run
     port = config[:port] || MASTER_DEFAULT_PORT
     uri = config[:uri]
@@ -143,6 +150,17 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
   end
 
   def check_mesos_tasks(metric_value, mode, value, min, max)
+    if config[:delta]
+      db = Daybreak::DB.new '/tmp/mesos-metrics.db', default: 0
+      prev_value = db['task_running']
+      db.lock do
+        db['task_running'] = metric_value
+      end
+      metric_value -= prev_value
+      db.flush
+      db.compact
+      db.close
+    end
     case mode
     when 'eq'
       critical "The number of running tasks cluster is equal to #{value}!" if metric_value.equal? value
