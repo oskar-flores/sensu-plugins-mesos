@@ -1,9 +1,9 @@
 #! /usr/bin/env ruby
 #
-#   check-marathon
+#   check-metronome
 #
 # DESCRIPTION:
-#   This plugin checks that the ping url returns 200 OK
+#   This plugin checks that Metronome can query the existing job graph.
 #
 # OUTPUT:
 #   plain text
@@ -16,12 +16,12 @@
 #   gem: rest-client
 #
 # USAGE:
-#   #YELLOW
+#
 #
 # NOTES:
 #
 # LICENSE:
-#   Copyright 2015, Tom Stockton (tom@stocktons.org.uk)
+#   Copyright 2017, PTC (www.ptc.com)
 #   Released under the same terms as Sensu (the MIT license); see LICENSE
 #   for details.
 #
@@ -29,25 +29,24 @@
 require 'sensu-plugin/check/cli'
 require 'rest-client'
 
-class MarathonNodeStatus < Sensu::Plugin::Check::CLI
+class MetronomeNodeStatus < Sensu::Plugin::Check::CLI
   option :server,
-         description: 'Marathon servers, comma separated',
-         short: '-s SERVER1,SERVER2,...',
-         long: '--server SERVER1,SERVER2,...',
+         description: 'Metronome hosts, comma separated',
+         short: '-s SERVER',
+         long: '--server SERVER',
          default: 'localhost'
 
   option :port,
-         description: 'Marathon port',
+         description: 'Metronome port',
          short: '-p PORT',
          long: '--port PORT',
-         required: false,
-         default: '8080'
+         default: '9942'
 
   option :uri,
          description: 'Endpoint URI',
          short: '-u URI',
          long: '--uri URI',
-         default: '/ping'
+         default: '/v1/jobs'
 
   option :timeout,
          description: 'timeout in seconds',
@@ -58,21 +57,22 @@ class MarathonNodeStatus < Sensu::Plugin::Check::CLI
 
   def run
     servers = config[:server]
+    uri = config[:uri]
     failures = []
     servers.split(',').each do |server|
       begin
-        r = RestClient::Resource.new("http://#{server}:#{config[:port]}#{config[:uri]}", timeout: config[:timeout]).get
+        r = RestClient::Resource.new("http://#{server}:#{config[:port]}#{uri}", timeout: config[:timeout]).get
         if r.code != 200
-          failures << "Marathon Service on #{server} is not responding"
+          failures << "Metronome on #{server} is not responding"
         end
       rescue Errno::ECONNREFUSED, RestClient::ResourceNotFound, SocketError
-        failures << "Marathon Service on #{server} is not responding"
+        failures << "Metronome on #{server} is not responding"
       rescue RestClient::RequestTimeout
-        failures << "Marathon Service on #{server} connection timed out"
+        failures << "Metronome on #{server} connection timed out"
       end
     end
     if failures.empty?
-      ok "Marathon Service is up on #{servers}"
+      ok "Metronome is running on #{servers}"
     else
       critical failures.join("\n")
     end

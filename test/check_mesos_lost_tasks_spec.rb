@@ -2,8 +2,6 @@ require_relative './spec_helper.rb'
 require_relative '../bin/check-mesos-lost-tasks.rb'
 require_relative './fixtures.rb'
 
-require 'sensu-plugin/check/cli'
-
 # rubocop:disable Style/ClassVars
 class MesosLostTasksCheck
   at_exit do

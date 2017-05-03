@@ -30,9 +30,10 @@
 require 'sensu-plugin/check/cli'
 require 'rest-client'
 require 'json'
+require 'daybreak'
 
 # Mesos master default ports
-MASTER_DEFAULT_PORT = '5050'.freeze
+MASTER_DEFAULT_PORT ||= '5050'.freeze
 
 class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
   check_name 'CheckMesosLostTasks'
@@ -61,12 +62,25 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
          proc: proc(&:to_i),
          default: 5
 
+  option :uri,
+         description: 'Endpoint URI',
+         short: '-u URI',
+         long: '--uri URI',
+         default: '/metrics/snapshot'
+
   option :value,
          description: 'value to check against',
          short: '-v VALUE',
          long: '--value VALUE',
          default: 0,
+         proc: proc(&:to_i),
          required: false
+
+  option :delta,
+         short: '-d',
+         long: '--delta',
+         description: 'Use this flag to compare the metric with the previously retreived value',
+         boolean: true
 
   def run
     if config[:value].to_i < 0
@@ -75,7 +89,7 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
 
     server = config[:server]
     port = config[:port] || MASTER_DEFAULT_PORT
-    uri = '/metrics/snapshot'
+    uri = config[:uri]
     timeout = config[:timeout].to_i
     value = config[:value].to_i
 
@@ -86,7 +100,17 @@ class MesosLostTasksCheck < Sensu::Plugin::Check::CLI
 
       r = RestClient::Resource.new("#{server}#{uri}", timeout).get
       tasks_lost = check_tasks(r)
-
+      if config[:delta]
+        db = Daybreak::DB.new '/tmp/mesos-metrics.db', default: 0
+        prev_value = db["task_#{MesosLostTasksCheck.metrics_name}"]
+        db.lock do
+          db["task_#{MesosLostTasksCheck.metrics_name}"] = tasks_lost
+        end
+        tasks_lost -= prev_value
+        db.flush
+        db.compact
+        db.close
+      end
       if tasks_lost > value
         critical "The number of LOST tasks [#{tasks_lost}] is bigger than provided [#{value}]!"
       end

@@ -1,9 +1,9 @@
 #! /usr/bin/env ruby
 #
-#   check-mesos-failed-tasks
+#   check-mesos-disk-balance
 #
 # DESCRIPTION:
-#   This plugin checks that there are less or same number of failed tasks than provided on a Mesos cluster
+#   This plugin checks that there is less disk usage imbalance than specified on a certain mesos cluster
 #
 # OUTPUT:
 #   plain text
@@ -22,7 +22,6 @@
 # NOTES:
 #
 # LICENSE:
-#   Copyright 2016, Oskar Flores (oskar.flores@gmail.com)
 #   Released under the same terms as Sensu (the MIT license); see LICENSE
 #   for details.
 #
@@ -30,14 +29,14 @@
 require 'sensu-plugin/check/cli'
 require 'rest-client'
 require 'json'
-require 'daybreak'
 
 # Mesos master default ports
 MASTER_DEFAULT_PORT ||= '5050'.freeze
 
-class MesosFailedTasksCheck < Sensu::Plugin::Check::CLI
-  check_name 'CheckMesosFailedTasks'
-  @metrics_name = 'master/tasks_failed'.freeze
+class MesosDiskBalanceCheck < Sensu::Plugin::Check::CLI
+  check_name 'MesosDiskBalanceCheck'
+  @metrics_name = 'slaves'.freeze
+  CHECK_TYPE = 'disk'.freeze
 
   class << self
     attr_reader :metrics_name
@@ -59,7 +58,7 @@ class MesosFailedTasksCheck < Sensu::Plugin::Check::CLI
          description: 'Endpoint URI',
          short: '-u URI',
          long: '--uri URI',
-         default: '/metrics/snapshot'
+         default: '/master/slaves'
 
   option :timeout,
          description: 'timeout in seconds',
@@ -68,53 +67,47 @@ class MesosFailedTasksCheck < Sensu::Plugin::Check::CLI
          proc: proc(&:to_i),
          default: 5
 
-  option :value,
-         description: 'value to check against',
-         short: '-v VALUE',
-         long: '--value VALUE',
+  option :crit,
+         description: 'Critical value to check against',
+         short: '-c VALUE',
+         long: '--critical VALUE',
          proc: proc(&:to_i),
          default: 0,
          required: false
 
-  option :delta,
-         short: '-d',
-         long: '--delta',
-         description: 'Use this flag to compare the metric with the previously retrieved value',
-         boolean: true
+  option :warn_th,
+         description: 'Warning value to check against',
+         short: '-w VALUE',
+         long: '--warning VALUE',
+         proc: proc(&:to_i),
+         default: 0,
+         required: false
 
   def run
-    if config[:value].to_i < 0
-      unknown 'Number of failed tasks cannot be negative'
+    if config[:crit].to_i < 0 || config[:warn_th].to_i < 0
+      unknown 'Thresholds cannot be negative'
     end
 
     server = config[:server]
     port = config[:port] || MASTER_DEFAULT_PORT
     uri = config[:uri]
     timeout = config[:timeout].to_i
-    value = config[:value].to_i
+    crit = config[:crit].to_i
+    warn_th = config[:warn_th].to_i
 
     begin
       server = get_leader_url server, port
       r = RestClient::Resource.new("#{server}#{uri}", timeout).get
-      tasks_failed = check_tasks(r)
     rescue Errno::ECONNREFUSED, RestClient::ResourceNotFound, SocketError
       critical  "Mesos #{server} is not responding"
     rescue RestClient::RequestTimeout
       critical  "Mesos #{server} connection timed out"
-      if config[:delta]
-        db = Daybreak::DB.new '/tmp/mesos-metrics.db', default: 0
-        prev_value = db["task_#{MesosFailedTasksCheck.metrics_name}"]
-        db.lock do
-          db["task_#{MesosFailedTasksCheck.metrics_name}"] = tasks_failed
-        end
-        tasks_failed -= prev_value
-        db.flush
-        db.compact
-        db.close
+      compare = get_check_diff(get_slaves(r))
+      if compare['diff'] > crit
+        critical "There is a disk usage diff of #{compare['diff']} bigger than #{crit} " + compare['msg']
       end
-
-      if tasks_failed > value
-        critical "The number of FAILED tasks [#{tasks_failed}] is bigger than provided [#{value}]!"
+      if compare['diff'] > warn_th
+        warning "There is a disk usage diff of #{compare['diff']} bigger than #{warn_th} " + compare['msg']
       end
     end
     ok
@@ -132,17 +125,32 @@ class MesosFailedTasksCheck < Sensu::Plugin::Check::CLI
   # Parses JSON data as returned from Mesos's metrics API
   # @param data [String] Server response
   # @return tasks_failed [Integer] Number of failed tasks in Mesos
-  def check_tasks(data)
+  def get_slaves(data)
     begin
-      tasks_failed = JSON.parse(data)[MesosFailedTasksCheck.metrics_name]
+      slaves = JSON.parse(data)[MesosDiskBalanceCheck.metrics_name]
     rescue JSON::ParserError
       raise "Could not parse JSON response: #{data}"
     end
 
-    if tasks_failed.nil?
-      raise "No metrics for [#{MesosFailedTasksCheck.metrics_name}] in server response: #{data}"
+    if slaves.nil?
+      raise "No metrics for [#{MesosDiskBalanceCheck.metrics_name}] in server response: #{data}"
     end
 
-    tasks_failed.round.to_i
+    slaves
+  end
+
+  def get_check_diff(slavelist)
+    begin
+      usages = {}
+      check_diff = {}
+      slavelist.each do |slaveinfo|
+        usages.store(slaveinfo['hostname'], slaveinfo['used_resources'][CHECK_TYPE] * 100 / slaveinfo['resources'][CHECK_TYPE])
+      end
+      sorted = usages.sort_by { |_hostname, total| total }
+      max = usages.length - 1
+      check_diff['diff'] = sorted[max][1] - sorted[0][1]
+      check_diff['msg'] = "Hostname #{sorted[0][0]} uses #{sorted[0][1]}% and Hostname #{sorted[max][0]} uses #{sorted[max][1]}%"
+    end
+    check_diff
   end
 end

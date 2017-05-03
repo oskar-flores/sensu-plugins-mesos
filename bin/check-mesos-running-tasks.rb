@@ -30,25 +30,36 @@
 require 'sensu-plugin/check/cli'
 require 'rest-client'
 require 'json'
+require 'daybreak'
 
 # Mesos master default ports
-MASTER_DEFAULT_PORT = '5050'.freeze
+MASTER_DEFAULT_PORT ||= '5050'.freeze
 
 class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
   check_name 'CheckMesosRunningTask'
+  @metrics_name = 'master/tasks_running'.freeze
+
+  class << self
+    attr_reader :metrics_name
+  end
 
   option :server,
          description: 'Mesos server',
          short: '-s SERVER',
          long: '--server SERVER',
-         default: 'localhost',
-         required: true
+         default: 'localhost'
 
   option :port,
          description: "port (default #{MASTER_DEFAULT_PORT})",
          short: '-p PORT',
          long: '--port PORT',
          required: false
+
+  option :uri,
+         description: 'Endpoint URI',
+         short: '-u URI',
+         long: '--uri URI',
+         default: '/metrics/snapshot'
 
   option :timeout,
          description: 'timeout in seconds',
@@ -58,7 +69,7 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
          default: 5
 
   option :mode,
-         description: 'eq lt gt or rg',
+         description: 'eq ne lt gt or rg',
          short: '-m MODE',
          long: '--mode MODE',
          required: true
@@ -68,6 +79,7 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
          short: '-l VALUE',
          long: '--low VALUE',
          required: false,
+         proc: proc(&:to_i),
          derfault: 0
 
   option :max,
@@ -75,18 +87,27 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
          short: '-h VALUE',
          long: '--high VALUE',
          required: false,
+         proc: proc(&:to_i),
          default: 1
 
   option :value,
          description: 'value to check against',
          short: '-v VALUE',
          long: '--value VALUE',
+         proc: proc(&:to_i),
          default: 0,
          required: false
 
+  option :delta,
+         short: '-d',
+         long: '--delta',
+         description: 'Use this flag to compare the metric with the previously retrieved value',
+         boolean: true
+
   def run
     port = config[:port] || MASTER_DEFAULT_PORT
-    uri = '/metrics/snapshot'
+    uri = config[:uri]
+    timeout = config[:timeout].to_i
     mode = config[:mode]
     value = config[:value].to_i
     server = config[:server]
@@ -95,8 +116,8 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
 
     begin
       server = get_leader_url server, port
-      r = RestClient::Resource.new("#{server}#{uri}", timeout: config[:timeout]).get
-      metric_value = get_running_tasks r
+      r = RestClient::Resource.new("#{server}#{uri}", timeout).get
+      metric_value = check_tasks(r)
       check_mesos_tasks(metric_value, mode, value, min, max)
     rescue Errno::ECONNREFUSED, RestClient::ResourceNotFound, SocketError
       critical  "Mesos #{server} is not responding"
@@ -119,9 +140,9 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
   # @param data [String] Server response
   # @return [Numeric] Number of running tasks
 
-  def get_running_tasks(data)
+  def check_tasks(data)
     begin
-      running_tasks = JSON.parse(data)['master/tasks_running']
+      running_tasks = JSON.parse(data)[MesosRunningTaskCheck.metrics_name]
     rescue JSON::ParserError
       raise "Could not parse JSON response: #{data}"
     end
@@ -134,9 +155,22 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
   end
 
   def check_mesos_tasks(metric_value, mode, value, min, max)
+    if config[:delta]
+      db = Daybreak::DB.new '/tmp/mesos-metrics.db', default: 0
+      prev_value = db['task_running']
+      db.lock do
+        db['task_running'] = metric_value
+      end
+      metric_value -= prev_value
+      db.flush
+      db.compact
+      db.close
+    end
     case mode
     when 'eq'
       critical "The number of running tasks cluster is equal to #{value}!" if metric_value.equal? value
+    when 'ne'
+      critical "The number of running tasks cluster is not equal to #{value}!" if metric_value != value
     when 'lt'
       critical "The number of running tasks cluster is lower than #{value}!" if metric_value < value
     when 'gt'
@@ -147,8 +181,4 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
       end
     end
   end
-
-  public :get_running_tasks
-  public :get_leader_url
-  public :check_mesos_tasks
 end
