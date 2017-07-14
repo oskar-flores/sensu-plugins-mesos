@@ -1,6 +1,6 @@
 #! /usr/bin/env ruby
 #
-#   check-mesos-tasks
+#   check-mesos-running-tasks
 #
 # DESCRIPTION:
 #   This plugin checks that there are running tasks on a mesos cluster
@@ -35,6 +35,8 @@ require 'json'
 MASTER_DEFAULT_PORT = '5050'.freeze
 
 class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
+  check_name 'CheckMesosRunningTask'
+
   option :server,
          description: 'Mesos server',
          short: '-s SERVER',
@@ -68,7 +70,6 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
          required: false,
          derfault: 0
 
-
   option :max,
          description: 'max value on range',
          short: '-h VALUE',
@@ -83,9 +84,7 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
          default: 0,
          required: false
 
-
   def run
-
     port = config[:port] || MASTER_DEFAULT_PORT
     uri = '/metrics/snapshot'
     mode = config[:mode]
@@ -97,7 +96,7 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
     begin
       server = get_leader_url server, port
       r = RestClient::Resource.new("#{server}#{uri}", timeout: config[:timeout]).get
-      metric_value = get_running_tasks (r)
+      metric_value = get_running_tasks r
       check_mesos_tasks(metric_value, mode, value, min, max)
     rescue Errno::ECONNREFUSED, RestClient::ResourceNotFound, SocketError
       critical  "Mesos #{server} is not responding"
@@ -106,7 +105,6 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
     end
     ok
   end
-
 
   # Redirects server call to discover the Leader
   # @param server [String] Server address
@@ -132,22 +130,21 @@ class MesosRunningTaskCheck < Sensu::Plugin::Check::CLI
       raise "No tasks in server response: #{data}"
     end
 
-    return running_tasks.round
+    running_tasks.round
   end
 
   def check_mesos_tasks(metric_value, mode, value, min, max)
-
     case mode
-      when 'eq'
-        critical "The number of running tasks cluster is equal to #{value}!" if metric_value.equal? value
-      when 'lt'
-        critical "The number of running tasks cluster is lower than #{value}!" if metric_value < value
-      when 'gt'
-        critical "The number of running tasks cluster is greater than #{value}!" if metric_value > value
-      when 'rg'
-        unless (min.to_i..max.to_i).include? metric_value
-          critical "The number of running tasks in cluster is not in #{min} - #{max} value range!"
-        end
+    when 'eq'
+      critical "The number of running tasks cluster is equal to #{value}!" if metric_value.equal? value
+    when 'lt'
+      critical "The number of running tasks cluster is lower than #{value}!" if metric_value < value
+    when 'gt'
+      critical "The number of running tasks cluster is greater than #{value}!" if metric_value > value
+    when 'rg'
+      unless (min.to_i..max.to_i).cover? metric_value
+        critical "The number of running tasks in cluster is not in #{min} - #{max} value range!"
+      end
     end
   end
 

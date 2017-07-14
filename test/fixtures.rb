@@ -252,5 +252,4 @@ def mesos_metrics_response
     "registrar/state_store_ms/p9999": 53.8022628096
 }
   EOF
-
 end
