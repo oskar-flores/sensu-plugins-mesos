@@ -3,6 +3,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 This CHANGELOG follows the format listed at [Keep A Changelog](http://keepachangelog.com/)
 
+## [Unreleased] 2017-07-17
+- metrics_instances_marathon.rb: Send metrics of all apps with the info of instances running
+
 ## [Unreleased]
 - check-marathon-task.rb: Use the health check results to verify that a task is running.
 - check-marathon-task.rb: Rename incorrect "state" parameter to "status".
