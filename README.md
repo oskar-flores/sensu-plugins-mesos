@@ -11,7 +11,13 @@
 ## Files
  * bin/check-chronos.rb
  * bin/check-marathon.rb
+ * bin/check-marathon-task.rb
  * bin/check-mesos.rb
+ * bin/check-mesos-failed-tasks.rb
+ * bin/check-mesos-leader-status.rb
+ * bin/check-mesos-lost-tasks.rb
+ * bin/check-mesos-running-tasks.rb
+ * bin/metrics-instances-marathon.rb
  * bin/metrics-marathon.rb
  * bin/metrics-mesos.rb
 
