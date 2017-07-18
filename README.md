@@ -11,6 +11,7 @@
 ## Files
  * bin/check-chronos.rb
  * bin/check-marathon.rb
+ * bin/check-marathon-healthy-app.rb
  * bin/check-marathon-task.rb
  * bin/check-mesos.rb
  * bin/check-mesos-failed-tasks.rb
