@@ -9,22 +9,16 @@ class MesosFailedTasksCheck
   at_exit do
     @@autorun = false
   end
-
-  def critical(*); end
-
-  def warning(*); end
-
-  def ok(*); end
-
-  def unknown(*); end
 end
 
-def check_results(parameters)
-  check = MesosFailedTasksCheck.new parameters.split(' ')
-  check.check_tasks(mesos_metrics_response)
-end
 
 describe 'MesosFailedTasksCheck' do
+
+  def check_results(parameters)
+    check = MesosFailedTasksCheck.new parameters.split(' ')
+    check.check_tasks(mesos_metrics_response)
+  end
+
   before do
     @default_parameters = '--server localhost --value 0'
     @check = MesosFailedTasksCheck.new @default_parameters.split(' ')
@@ -37,8 +31,8 @@ describe 'MesosFailedTasksCheck' do
     end
 
     it 'tests that an empty server response raises an error' do
-      expect { @check.check_tasks '{}' }.to raise_error(/No metrics for/)
-      expect { @check.check_tasks '' }.to raise_error(/Could not parse JSON/)
+      expect {@check.check_tasks '{}'}.to raise_error(/No metrics for/)
+      expect {@check.check_tasks ''}.to raise_error(/Could not parse JSON/)
     end
   end
 end

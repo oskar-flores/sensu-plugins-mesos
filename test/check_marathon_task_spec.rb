@@ -8,21 +8,31 @@ class MarathonTaskCheck
     @@autorun = false
   end
 
-  def critical(*); end
+  def critical(*)
+    ;
+  end
 
-  def warning(*); end
+  def warning(*)
+    ;
+  end
 
-  def ok(*); end
+  def ok(*)
+    ;
+  end
 
-  def unknown(*); end
+  def unknown(*)
+    ;
+  end
 end
 
-def check_results(parameters)
-  check = MarathonTaskCheck.new parameters.split(' ')
-  check.check_tasks marathon_response
-end
 
 describe 'MarathonTaskCheck' do
+
+  def check_results(parameters)
+    check = MarathonTaskCheck.new parameters.split(' ')
+    check.check_tasks marathon_response
+  end
+
   before do
     @default_parameters = '--server localhost --task foo/bar --instances 1'
     @check = MarathonTaskCheck.new @default_parameters.split(' ')
@@ -48,8 +58,8 @@ describe 'MarathonTaskCheck' do
     end
 
     it 'tests that an empty server response raises an error' do
-      expect { @check.check_tasks '{}' }.to raise_error(/No tasks/)
-      expect { @check.check_tasks '' }.to raise_error(/Could not parse JSON/)
+      expect {@check.check_tasks '{}'}.to raise_error(/No tasks/)
+      expect {@check.check_tasks ''}.to raise_error(/Could not parse JSON/)
     end
   end
 end
